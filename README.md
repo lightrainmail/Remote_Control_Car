@@ -24,4 +24,13 @@ stm32f103c8t6这款芯片最高主频是72MHz,我使用的频率是72MHz。
 ### 用于使小车转向的舵机
 这个小车前面转向舵机型号是MG995，工作电压在5-7.2V。
 
-通过周期为20ms的PWM波形控制。舵机旋转角度是和PWM波高电平持续时间成正比的，
+转动角度和输入信号的关系参考知乎一个人的图
+![v2-53bc14d137a7a06b963c3ab0220c73ef_r](https://user-images.githubusercontent.com/89727667/222798974-6f44f906-3bbf-42b6-a9b7-4b99ee3cd933.jpg)
+
+我使用定时器TIM2的CH1通道输出PWM来控制舵机
+![image](https://user-images.githubusercontent.com/89727667/222799235-610a9e67-8952-45bf-9038-bb697069efde.png)
+
+设置PSC为72-1，ARR为20000-1，Pulse（即为CCR）为1500，其他默认。
+
+servo.h
+
