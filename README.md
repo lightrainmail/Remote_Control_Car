@@ -58,7 +58,7 @@ void servo_setangle(uint16_t ccr);
 
 servo.c文件
 
-```
+```c
 //
 // Created by Lightrain on 2023/3/1.
 //
