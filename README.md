@@ -7,9 +7,19 @@
 
 他可以前进，后退，左转右转，而且每一个电机都有一个独立TIM定时器输出的PWM控制。小车的速度是可以调节的，转弯的角度是可以调节的。本质上就是一个玩具小车，只不过升级了些。
 
-# 硬件部分
+## 硬件部分
 ### 遥控器部分
 stm32f103c8t6最小系统板+摇杆模块+NRF24L01模块
-![IMG_20230304_012135](https://user-images.githubusercontent.com/89727667/222786373-f0b2a1cb-c5c3-44e1-92fa-9b552e927728.jpg)
-![IMG_20230304_012149](https://user-images.githubusercontent.com/89727667/222786384-6d3fe203-7763-46e0-b29a-805cd40ab752.jpg)
-![IMG_20230304_012204](https://user-images.githubusercontent.com/89727667/222786413-d702ec72-56fe-4dc2-a81e-ca30316cd4f7.jpg)
+![IMG_20230304_012459](https://user-images.githubusercontent.com/89727667/222787181-b207340d-6486-45ab-a252-3dae144af038.jpg)
+
+### 小车部分
+stm32f103c8t6最小系统板+L298N电机驱动模块+两个稳压模块+两个电机+一个舵机+NRF24L01+两节18650电池+亚克力板车架
+
+### 注意
+stm32f103c8t6这款芯片最高主频是72MHz,我使用的频率是72MHz。
+
+所有这些都是在淘宝上买的
+
+## 软件部分
+### 用于使小车转向的舵机
+
