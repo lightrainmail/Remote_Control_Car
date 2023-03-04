@@ -18,16 +18,14 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "spi.h"
-#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "nrf24l01p.h"
-#include "servo.h"
-#include "motor.h"
 #include "retarget.h"
 /* USER CODE END Includes */
 
@@ -59,22 +57,11 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-//data array to be read
+//data array to be send
+uint8_t tx_data[NRF24L01P_PAYLOAD_LENGTH]={0,1,2,3,4,5,6,7};
 
-uint8_t rx_data[NRF24L01P_PAYLOAD_LENGTH]={0,};
-
-/*定义接受数据是干嘛的ra_data[0]
- * rx_data[0]用于确定电机
- *
- * rx_data[1],ra_data[2]组成16位数据，
- *
- * rx_data[3],rx_data[4]组成16位数据，
- *
- * rx_data[5].rx_data[6]组成16位数据，
- *
- */
-
- void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+//for rx interrupt
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 /* USER CODE END 0 */
 
@@ -107,20 +94,21 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_SPI2_Init();
-  MX_TIM2_Init();
-  MX_TIM3_Init();
-  MX_TIM4_Init();
+  MX_ADC1_Init();
   MX_USART1_UART_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
-  RetargetInit(&huart1);
+    RetargetInit(&huart1);//用于串口输出的函�?
 
-    nrf24l01p_rx_init(2500,_1Mbps);
 
-    servo_init();
-    motor_init();
 
-    uint16_t speedA,speedB,angle=1500;
-    float A,B;
+    nrf24l01p_tx_init(2500,_1Mbps);
+
+    uint16_t angle=1500,speedA=0,speedB=0,ADC2_Value=1996;
+
+    tx_data[0]=0;
+
+
 
 
   /* USER CODE END 2 */
@@ -129,28 +117,47 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      //更新遥控器发来的数据,并将8为数据合�??????16位数�??????
-      angle=(rx_data[2]<<8)|rx_data[1];
-      A=(rx_data[4]<<8)|rx_data[3];
-      B=(rx_data[6]<<8)|rx_data[5];
+      speedA=ADC1_GetValue();
+      ADC2_Value=ADC2_GetValu();
+      angle=(((uint16_t)290)*ADC2_Value)/1996+1210;
 
-      servo_setangle(angle);
+      speedB=speedA;
 
-      if(rx_data[0]==2){
-          speedA=(uint16_t)(0.2591*A-320);
-          speedB=(uint16_t)(0.2591*B-320);
-          motor_stepback( speedA,speedB);
+      tx_data[1]=angle&0xff;
+      tx_data[2]=(angle>>8)&0xff;
+
+     tx_data[3]=speedA&0xff;
+     tx_data[4]=(speedA>>8)&0xff;
+
+     tx_data[5]=speedB&0xff;
+     tx_data[6]=(speedB>>8)&0xff;
+      
+
+      //小车前进后�??控制由speedA和speedB决定
+      if(speedA<1458){
+          tx_data[0]=1;
       }
-      if(rx_data[0]==1){
-          speedA=(uint16_t)(-0.2641*A+720);
-          speedB=(uint16_t)(-0.2641*B+720);
-          motor_goahead(speedA,speedB);
+      if(speedA>2543){
+          tx_data[0]=2;
+      }
+      if(speedA<1543){
+          if(speedA>1458){
+              tx_data[0]=0;
+          }
       }
 
-      if(rx_data[0]=0){
-          motor_goahead(0,0);
-      }
 
+
+      //对转弯舵机控制进行数据转化
+
+
+
+      //transmit
+      nrf24l01p_tx_transmit(tx_data);
+
+      printf("y=%d\n",angle);
+
+      HAL_Delay(10);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -166,6 +173,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -195,12 +203,18 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
     if(GPIO_Pin==NRF24L01P_IRQ_PIN_NUMBER){
-        nrf24l01p_rx_receive(rx_data);//read data when data ready flag is set
+        nrf24l01p_tx_irq();//clear interrupt flag
     }
 }
 /* USER CODE END 4 */
