@@ -77,7 +77,7 @@ void servo_setangle(uint16_t ccr){
 }
 
 ```
-#### 用于是小车前进的
+#### 用于使小车前进的
 
 
 
